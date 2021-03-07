@@ -11,6 +11,7 @@ import (
 
 	"github.com/anacrolix/tagflag"
 	log "github.com/inconshreveable/log15"
+	"github.com/jandos/gofine"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/martenwallewein/scion-bw-test/scion_torrent"
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
@@ -69,10 +70,18 @@ func mainErr() error {
 	startPort := uint16(flags.StartPort)
 	var i uint16
 	i = 0
+
+	var env gofine.Environment
+	err := env.InitDefault()
+	Check(err)
+	fmt.Printf("Available worker count: %v\n", env.LgoreCount())
 	scion_torrent.InitSQUICCerts()
 	var wg sync.WaitGroup
 	for i < uint16(flags.NumCons) {
 		go func(wg *sync.WaitGroup, startPort uint16, i uint16) {
+			err := env.Occupy(int(i))
+			Check(err)
+			fmt.Printf("Occupied core %d\n", i)
 			defer wg.Done()
 			if flags.IsServer {
 				if flags.UseQUIC {
